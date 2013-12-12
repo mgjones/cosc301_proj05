@@ -27,6 +27,17 @@ typedef struct {
  * type) should go here.
  */
 
+typedef struct {
+	char type;
+	char name[256];
+	int filesize;
+	time_t acc_time;
+	time_t mod_time; 
+	char owner[256];
+	mode_t mode; 
+
+} s3dirent_t;
+
 
 
 

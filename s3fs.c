@@ -42,6 +42,43 @@ void *fs_init(struct fuse_conn_info *conn)
 {
     fprintf(stderr, "fs_init --- initializing file system.\n");
     s3context_t *ctx = GET_PRIVATE_DATA;
+
+	// test bucket
+	if (s3fs_test_bucket(ctx->s3bucket) < 0) {
+		printf("Failed to connect to bucket (s3fs_test_bucket)\n");
+		return NULL;
+	}else{
+		printf("Successfully connected to bucket (s3fs_test_bucket)\n"); 
+	}
+
+	//clear bucket
+	if (s3fs_clear_bucket(ctx->s3bucket) == 0){
+		// the bucket was successfully cleared		
+		
+	} else {
+		printf("Failed to clear bucket (s3fs_clear_bucket)\n"); 
+		return NULL;
+	}
+	
+	// set new metadata
+	s3dirent_t *root = (s3dirent_t*) malloc(sizeof(s3dirent_t));
+
+	time_t acc_time;
+	time_t mod_time;
+	time(&acc_time);
+	time(&mod_time);
+	root->type = 'd';
+	strncpy(root->name, ".", 256);
+	root->filesize = 0;
+	root->acc_time = acc_time;
+	root->mod_time = mod_time; 
+	printf("ALLLL Dem MONKEYS doe!\n");
+	if (s3fs_put_object(ctx->s3bucket, ".", (uint8_t*) root, sizeof(s3dirent_t)) == -1){
+		printf("s3fs_put_object error: could not put object into bucket.\n"); 
+		return NULL;
+	}
+	printf("Dem MONKEYS doe!\n"); 
+	free(root); 
     return ctx;
 }
 
@@ -65,6 +102,19 @@ void fs_destroy(void *userdata) {
 int fs_getattr(const char *path, struct stat *statbuf) {
     fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
     s3context_t *ctx = GET_PRIVATE_DATA;
+	// if the path refers to a directory
+	s3dirent_t *dir = NULL;
+	uint8_t size = s3fs_get_object(&ctx, path, (uint8_t*) &dir, 0, 0);
+	uint8_t numentries = size / sizeof(s3dirent_t); 
+	int i = 0; 
+	/*	
+	if (ctx[47]){
+		for (; i < numentries; i++){
+			dir[i].type;
+		}
+	}		
+	*/ 	
+	// 
     return -EIO;
 }
 
@@ -119,6 +169,20 @@ int fs_mkdir(const char *path, mode_t mode) {
     s3context_t *ctx = GET_PRIVATE_DATA;
     mode |= S_IFDIR;
 
+	/*** TESTING...***/	
+	ssize_t sample_len = 8;
+
+	ssize_t object = s3fs_put_object(ctx, path, (uint8_t*)ctx, sample_len);
+
+	if (object < 0) {
+        printf("Failure in s3fs_put_object\n");
+    } else if (object < sample_len) {
+        printf("Failed to upload full test object (s3fs_put_object %d)\n", object);
+    } else {
+        printf("Successfully put test object in s3 (s3fs_put_object)\n");
+    }
+
+	/*** END TESTING...***/
     return -EIO;
 }
 
