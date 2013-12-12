@@ -165,25 +165,32 @@ int fs_releasedir(const char *path, struct fuse_file_info *fi) {
  * use mode|S_IFDIR.
  */
 int fs_mkdir(const char *path, mode_t mode) {
-    fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
-    s3context_t *ctx = GET_PRIVATE_DATA;
-    mode |= S_IFDIR;
+   fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+   s3context_t *ctx = GET_PRIVATE_DATA;
+   mode |= S_IFDIR;
 
-	/*** TESTING...***/	
-	ssize_t sample_len = 8;
+	// NEW STRUCT FOR NEW DIRECTORY //  //  
+	s3dirent_t* new = (s3dirent*) malloc(sizeof(s3dirent_t));
+	time_t acc_time;
+	time_t mod_time;
+	time(&acc_time);
+	time(&mod_time);
+	new->type = 'd';
+	strncpy(new->name, basename(path), 256); // not sure about name...path or dirname(path)
+	new->filesize = 0;
+	new->acc_time = acc_time;
+	new->mod_time = mod_time;
+	strncpy(new->owner, dirname(path), 256);
+	new->mode = mode; // is this right?
+	// DO NOT FORGET TO FREE AFTER USING IT
+	// // // // // // // // // //
 
-	ssize_t object = s3fs_put_object(ctx, path, (uint8_t*)ctx, sample_len);
-
-	if (object < 0) {
-        printf("Failure in s3fs_put_object\n");
-    } else if (object < sample_len) {
-        printf("Failed to upload full test object (s3fs_put_object %d)\n", object);
-    } else {
-        printf("Successfully put test object in s3 (s3fs_put_object)\n");
-    }
-
-	/*** END TESTING...***/
-    return -EIO;
+	uint8_t** buff = NULL;
+	const char* dir_name = dirname(path);
+	const char* name = basename(path);
+	// going into the parent directory
+	int dir_size = s3fs_get_object(ctx->s3bucket, dir_name, buff);
+	return -EIO;
 }
 
 
