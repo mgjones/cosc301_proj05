@@ -189,18 +189,38 @@ int fs_opendir(const char *path, struct fuse_file_info *fi) {
  * Read directory.  See the project description for how to use the filler
  * function for filling in directory items.
  */
-int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
-         struct fuse_file_info *fi)
-{
+int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi){
 
-	printf("UNTIL THIS DAY. COLGATE DAY !!!\n"); 
-
-    fprintf(stderr, "fs_readdir(path=\"%s\", buf=%p, offset=%d)\n", path, buf, (int)offset);
-    s3context_t *ctx = GET_PRIVATE_DATA;
-
+	fprintf(stderr, "fs_readdir(path=\"%s\", buf=%p, offset=%d)\n", path, buf, (int)offset);
+	s3context_t *ctx = GET_PRIVATE_DATA;
+	// objsize is the size of the retrieved directory object
+	s3dirent_t* buff = NULL;
+	int dir_size = s3fs_get_object(ctx->s3bucket, dirname(path), (uint8_t**)&buff,0,0);
+	int numdirent = dir_size / sizeof(s3dirent_t);
+	int i = 0;
 	
+	char* name = basename(path);
+	// checks if dir
+	for(;i < numdirent; i++){
+		if(strcmp(buff[i].name,name) == 0){
+		//match!
+			if(buff[i].type == 'd')
+				break;
 
-    return -EIO;
+		// not a directory
+		return ENOTDIR;
+		}
+	}
+
+	i = 0;
+	for (; i < numdirent; i++) {
+		// call filler function to fill in directory name
+		// to the supplied buffer
+		if (filler(buf, buff[i].name, NULL, 0) != 0) {
+           return -ENOMEM;
+		}
+	}
+	return -EIO;
 }
 
 
