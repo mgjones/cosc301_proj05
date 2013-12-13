@@ -302,10 +302,13 @@ int fs_rmdir(const char *path) {
 		}
 	}
 	free(ctx->s3bucket[i]);
-	// will have leaks if we don't free every struct inside directory
-	// have to go through each struct in array of structs and free each one
+	
    return -EIO;
 }
+
+
+/***** We were unable to get to stage two after spending most of our time on stage one.  ****/
+
 
 
 /* *************************************** */
