@@ -1,6 +1,15 @@
 /* This code is based on the fine code written by Joseph Pfeiffer for his
    fuse system tutorial. */
 
+
+/*
+ * Authors: Nolan Gonzalez and Mariah Jones
+ *
+ * Thursday, December 12, 2013
+ *
+*/
+
+
 #include "s3fs.h"
 #include "libs3_wrapper.h"
 
@@ -40,6 +49,7 @@
  */
 void *fs_init(struct fuse_conn_info *conn)
 {
+	printf("THIS IS THE GENESIS OF HUMANITYYYYY !!!\n"); 
     fprintf(stderr, "fs_init --- initializing file system.\n");
     s3context_t *ctx = GET_PRIVATE_DATA;
 
@@ -87,6 +97,7 @@ void *fs_init(struct fuse_conn_info *conn)
  * Called once on filesystem exit.
  */
 void fs_destroy(void *userdata) {
+	printf("THIS IS THE end OF HUMANITYYYYY !!!\n"); 
     fprintf(stderr, "fs_destroy --- shutting down file system.\n");
     free(userdata);
 }
@@ -100,9 +111,10 @@ void fs_destroy(void *userdata) {
  */
 
 int fs_getattr(const char *path, struct stat *statbuf) {
-
-   fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
-   s3context_t *ctx = GET_PRIVATE_DATA;
+	printf("yet, this is earth, wind, fire and water !!!\n"); 
+	
+	fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
+	s3context_t *ctx = GET_PRIVATE_DATA;
 
 	// // // // // // // ITERATION
 	s3dirent_t* buff = NULL;
@@ -116,17 +128,17 @@ int fs_getattr(const char *path, struct stat *statbuf) {
 
 	for(; i < num_entries; i++){
 	//check if current struct name is path name
-		if(strcmp(path,buff[i].name) != 0){
+		if(strcmp(path,buff[i].name) == 0){
 			statbuf->st_mode = buff[i].mode;
 			statbuf->st_size = (off_t)buff[i].filesize;
 			statbuf->st_atime = buff[i].acc_time;
 			statbuf->st_mtime = buff[i].mod_time;
 			// among others
-			break;
+			return 0;
+		}
 	}
-}
 
-   return -EIO;
+   return -1;
 }
 
 
@@ -137,10 +149,40 @@ int fs_getattr(const char *path, struct stat *statbuf) {
 * this directory
 */
 int fs_opendir(const char *path, struct fuse_file_info *fi) {
-   fprintf(stderr, "fs_opendir(path=\"%s\")\n", path);
-   s3context_t *ctx = GET_PRIVATE_DATA;
-   return -EIO;
+
+	printf("God opened the heavens to the mortals!!!\n"); 
+
+ 	fprintf(stderr, "fs_opendir(path=\"%s\")\n", path);
+	s3context_t *ctx = GET_PRIVATE_DATA;
+	s3dirent_t *buff = NULL;
+
+	char* dir_name = dirname(path);
+	char* name = basename(path);
+
+	int dir_size = s3fs_get_object(ctx->s3bucket, dir_name, (uint8_t**) &buff,0,0);
+	int num_entries = dir_size/sizeof(s3dirent_t);
+
+	// check if key refers to object
+	if(s3fs_get_object(ctx->s3bucket, dir_name, buff,0,0) == -1){
+		printf("Opening directory: unsuccesful\n");
+		return EIO;
+	}
+
+	int i = 0;
+	for(;i < num_entries; i++){
+		if(strcmp(buff[i].name,name) == 0){
+		//match!
+			if(buff[i].type == 'd'){
+				return 0;
+			}
+		// not a directory
+		return ENOTDIR;
+		}
+	}
+	// can't find directory
+	return EIO;
 }
+
 
 
 /*
@@ -150,17 +192,23 @@ int fs_opendir(const char *path, struct fuse_file_info *fi) {
 int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
          struct fuse_file_info *fi)
 {
-    fprintf(stderr, "fs_readdir(path=\"%s\", buf=%p, offset=%d)\n",
-          path, buf, (int)offset);
+
+	printf("UNTIL THIS DAY. COLGATE DAY !!!\n"); 
+
+    fprintf(stderr, "fs_readdir(path=\"%s\", buf=%p, offset=%d)\n", path, buf, (int)offset);
     s3context_t *ctx = GET_PRIVATE_DATA;
+
+	
+
     return -EIO;
 }
 
 
 /*
- * Release directory.
+ * Release directory (Close directory).
  */
 int fs_releasedir(const char *path, struct fuse_file_info *fi) {
+	printf("THEN EVERYTHING BURNED TO THE FIREY PITS OF HELL!!!\n"); 
     fprintf(stderr, "fs_releasedir(path=\"%s\")\n", path);
     s3context_t *ctx = GET_PRIVATE_DATA;
     return -EIO;
@@ -177,7 +225,7 @@ int fs_releasedir(const char *path, struct fuse_file_info *fi) {
  */
 int fs_mkdir(const char *path, mode_t mode) {
 
-	printf("THIS IS THE GENESIS OF HUMANITYYYYY !!!\n"); 
+	printf("AND THEN THERE WAS THE BIG BANG !!!\n"); 	
 
 	fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
   	s3context_t *ctx = GET_PRIVATE_DATA;
@@ -224,9 +272,25 @@ int fs_mkdir(const char *path, mode_t mode) {
  * Remove a directory. 
  */
 int fs_rmdir(const char *path) {
-    fprintf(stderr, "fs_rmdir(path=\"%s\")\n", path);
-    s3context_t *ctx = GET_PRIVATE_DATA;
-    return -EIO;
+	fprintf(stderr, "fs_rmdir(path=\"%s\")\n", path);
+	s3context_t *ctx = GET_PRIVATE_DATA;
+	s3dirent_t* buff = NULL;
+
+	int dir_size = s3fs_get_object(ctx->s3bucket, dirname(path), (uint8_t**)&buff,0,0);
+	int num_entries = dir_size / sizeof(s3dirent_t);
+	int i = 0;
+
+	// traverse through parent directory
+	for(;i < num_entries; i++){
+		if(strcmp(buff[i].name,basename(path)) == 0){
+			//match!
+			buff[i].type == 'u'; // u - unused
+		}
+	}
+	free(ctx->s3bucket[i]);
+	// will have leaks if we don't free every struct inside directory
+	// have to go through each struct in array of structs and free each one
+   return -EIO;
 }
 
 
