@@ -100,32 +100,46 @@ void fs_destroy(void *userdata) {
  */
 
 int fs_getattr(const char *path, struct stat *statbuf) {
-    fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
-    s3context_t *ctx = GET_PRIVATE_DATA;
-	// if the path refers to a directory
-	s3dirent_t *dir = NULL;
-	uint8_t size = s3fs_get_object(ctx->s3bucket, path, (uint8_t**) &dir, 0, 0);
-	uint8_t numentries = size / sizeof(s3dirent_t); 
-	int i = 0; 
-	/*
-	for (; i < num_entries; i++){
-		dir[i]
+
+   fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
+   s3context_t *ctx = GET_PRIVATE_DATA;
+
+	// // // // // // // ITERATION
+	s3dirent_t* buff = NULL;
+	const char* dir_name = dirname(path);
+	const char* name = basename(path);
+
+	// going into the parent directory
+	int dir_size = s3fs_get_object(ctx->s3bucket, dir_name, (uint8_t**) &buff,0,0);
+	int num_entries = dir_size/sizeof(s3dirent_t);
+	int i = 0;
+
+	for(; i < num_entries; i++){
+	//check if current struct name is path name
+		if(strcmp(path,buff[i].name) != 0){
+			statbuf->st_mode = buff[i].mode;
+			statbuf->st_size = (off_t)buff[i].filesize;
+			statbuf->st_atime = buff[i].acc_time;
+			statbuf->st_mtime = buff[i].mod_time;
+			// among others
+			break;
 	}
-	*/ 
-    return -EIO;
+}
+
+   return -EIO;
 }
 
 
 /*
- * Open directory
- *
- * This method should check if the open operation is permitted for
- * this directory
- */
+* Open directory
+*
+* This method should check if the open operation is permitted for
+* this directory
+*/
 int fs_opendir(const char *path, struct fuse_file_info *fi) {
-    fprintf(stderr, "fs_opendir(path=\"%s\")\n", path);
-    s3context_t *ctx = GET_PRIVATE_DATA;
-    return -EIO;
+   fprintf(stderr, "fs_opendir(path=\"%s\")\n", path);
+   s3context_t *ctx = GET_PRIVATE_DATA;
+   return -EIO;
 }
 
 
