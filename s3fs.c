@@ -49,7 +49,7 @@
  */
 void *fs_init(struct fuse_conn_info *conn)
 {
-	printf("THIS IS THE GENESIS OF HUMANITYYYYY !!!\n"); 
+
     fprintf(stderr, "fs_init --- initializing file system.\n");
     s3context_t *ctx = GET_PRIVATE_DATA;
 
@@ -82,12 +82,12 @@ void *fs_init(struct fuse_conn_info *conn)
 	root->filesize = 0;
 	root->acc_time = acc_time;
 	root->mod_time = mod_time; 
-	printf("ALLLL Dem MONKEYS doe!\n");
+
 	if (s3fs_put_object(ctx->s3bucket, "/", (uint8_t*) root, sizeof(s3dirent_t)) == -1){
 		printf("s3fs_put_object error: could not put object into bucket.\n"); 
 		return NULL;
 	}
-	printf("Dem MONKEYS doe!\n"); 
+
 	free(root); 
     return ctx;
 }
@@ -97,7 +97,7 @@ void *fs_init(struct fuse_conn_info *conn)
  * Called once on filesystem exit.
  */
 void fs_destroy(void *userdata) {
-	printf("THIS IS THE end OF HUMANITYYYYY !!!\n"); 
+
     fprintf(stderr, "fs_destroy --- shutting down file system.\n");
     free(userdata);
 }
@@ -111,7 +111,7 @@ void fs_destroy(void *userdata) {
  */
 
 int fs_getattr(const char *path, struct stat *statbuf) {
-	printf("yet, this is earth, wind, fire and water !!!\n"); 
+
 	
 	fprintf(stderr, "fs_getattr(path=\"%s\")\n", path);
 	s3context_t *ctx = GET_PRIVATE_DATA;
@@ -149,8 +149,6 @@ int fs_getattr(const char *path, struct stat *statbuf) {
 * this directory
 */
 int fs_opendir(const char *path, struct fuse_file_info *fi) {
-
-	printf("God opened the heavens to the mortals!!!\n"); 
 
  	fprintf(stderr, "fs_opendir(path=\"%s\")\n", path);
 	s3context_t *ctx = GET_PRIVATE_DATA;
@@ -228,7 +226,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
  * Release directory (Close directory).
  */
 int fs_releasedir(const char *path, struct fuse_file_info *fi) {
-	printf("THEN EVERYTHING BURNED TO THE FIREY PITS OF HELL!!!\n"); 
+
     fprintf(stderr, "fs_releasedir(path=\"%s\")\n", path);
     s3context_t *ctx = GET_PRIVATE_DATA;
     return -EIO;
@@ -245,8 +243,6 @@ int fs_releasedir(const char *path, struct fuse_file_info *fi) {
  */
 int fs_mkdir(const char *path, mode_t mode) {
 
-	printf("AND THEN THERE WAS THE BIG BANG !!!\n"); 	
-
 	fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
   	s3context_t *ctx = GET_PRIVATE_DATA;
 	mode |= S_IFDIR;
@@ -258,14 +254,12 @@ int fs_mkdir(const char *path, mode_t mode) {
 	time(&acc_time);
 	time(&mod_time);
 	new_alloc->type = 'd';
-	strncpy(new_alloc->name, basename(path), 256); // not sure about name...path or dirname(path)
+	strncpy(new_alloc->name, basename(path), 256); 
 	new_alloc->filesize = 0;
 	new_alloc->acc_time = acc_time;
 	new_alloc->mod_time = mod_time;
 	strncpy(new_alloc->owner, dirname(path), 256);
-	new_alloc->mode = mode; // is this right?
-	// DO NOT FORGET TO FREE AFTER USING IT
-	// // // // // // // // // //
+	new_alloc->mode = mode; 
 	int i = 0; 
 	uint8_t** buff = NULL;
 	const char* dir_name = dirname(path);
