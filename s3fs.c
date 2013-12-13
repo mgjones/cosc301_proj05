@@ -73,7 +73,7 @@ void *fs_init(struct fuse_conn_info *conn)
 	root->acc_time = acc_time;
 	root->mod_time = mod_time; 
 	printf("ALLLL Dem MONKEYS doe!\n");
-	if (s3fs_put_object(ctx->s3bucket, ".", (uint8_t*) root, sizeof(s3dirent_t)) == -1){
+	if (s3fs_put_object(ctx->s3bucket, "/", (uint8_t*) root, sizeof(s3dirent_t)) == -1){
 		printf("s3fs_put_object error: could not put object into bucket.\n"); 
 		return NULL;
 	}
@@ -104,17 +104,14 @@ int fs_getattr(const char *path, struct stat *statbuf) {
     s3context_t *ctx = GET_PRIVATE_DATA;
 	// if the path refers to a directory
 	s3dirent_t *dir = NULL;
-	uint8_t size = s3fs_get_object(&ctx, path, (uint8_t*) &dir, 0, 0);
+	uint8_t size = s3fs_get_object(ctx->s3bucket, path, (uint8_t**) &dir, 0, 0);
 	uint8_t numentries = size / sizeof(s3dirent_t); 
 	int i = 0; 
-	/*	
-	if (ctx[47]){
-		for (; i < numentries; i++){
-			dir[i].type;
-		}
-	}		
-	*/ 	
-	// 
+	/*
+	for (; i < num_entries; i++){
+		dir[i]
+	}
+	*/ 
     return -EIO;
 }
 
@@ -165,31 +162,46 @@ int fs_releasedir(const char *path, struct fuse_file_info *fi) {
  * use mode|S_IFDIR.
  */
 int fs_mkdir(const char *path, mode_t mode) {
-   fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
-   s3context_t *ctx = GET_PRIVATE_DATA;
-   mode |= S_IFDIR;
+
+	printf("THIS IS THE GENESIS OF HUMANITYYYYY !!!\n"); 
+
+	fprintf(stderr, "fs_mkdir(path=\"%s\", mode=0%3o)\n", path, mode);
+  	s3context_t *ctx = GET_PRIVATE_DATA;
+	mode |= S_IFDIR;
 
 	// NEW STRUCT FOR NEW DIRECTORY //  //  
-	s3dirent_t* new = (s3dirent*) malloc(sizeof(s3dirent_t));
+	s3dirent_t* new_alloc = (s3dirent_t*) malloc(sizeof(s3dirent_t));
 	time_t acc_time;
 	time_t mod_time;
 	time(&acc_time);
 	time(&mod_time);
-	new->type = 'd';
-	strncpy(new->name, basename(path), 256); // not sure about name...path or dirname(path)
-	new->filesize = 0;
-	new->acc_time = acc_time;
-	new->mod_time = mod_time;
-	strncpy(new->owner, dirname(path), 256);
-	new->mode = mode; // is this right?
+	new_alloc->type = 'd';
+	strncpy(new_alloc->name, basename(path), 256); // not sure about name...path or dirname(path)
+	new_alloc->filesize = 0;
+	new_alloc->acc_time = acc_time;
+	new_alloc->mod_time = mod_time;
+	strncpy(new_alloc->owner, dirname(path), 256);
+	new_alloc->mode = mode; // is this right?
 	// DO NOT FORGET TO FREE AFTER USING IT
 	// // // // // // // // // //
-
+	int i = 0; 
 	uint8_t** buff = NULL;
 	const char* dir_name = dirname(path);
 	const char* name = basename(path);
 	// going into the parent directory
-	int dir_size = s3fs_get_object(ctx->s3bucket, dir_name, buff);
+	int dir_size = s3fs_get_object(ctx->s3bucket, dir_name, buff, 0, 0);
+	
+	int num_entries = dir_size / sizeof(s3dirent_t); 
+	buff[num_entries] = new_alloc;
+	int check = s3fs_put_object(ctx->s3bucket, name, buff[i+1], sizeof(buff[i+1]));
+	if (check < 0){
+		printf("Failed add metadata to directory.\n");
+		return -1;	
+	} else {
+		printf("Directory was successfully added.\n");
+		return 0; 
+	}		
+	free(new_alloc);
 	return -EIO;
 }
 
